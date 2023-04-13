@@ -1,5 +1,5 @@
 from room.decorator import api
-from room.models import Room, RoomType, RoomTypePriceChange
+from room.models import Room, RoomType, RoomTypePriceChange, Order, User
 import datetime
 import csv
 from django.http import HttpResponse
@@ -20,16 +20,14 @@ def get_all_room_types():
 
 # 添加房间
 @api
-def add_room(room_name, room_type, room_price, room_desc, room_img, room_num, room_status_name, room_status_desc):
+def add_room(room_data):
     room = Room.models.get_or_create(
-        room_name=room_name, 
-        room_type=room_type, 
-        room_price=room_price, 
-        room_desc=room_desc, 
-        room_img=room_img, 
-        room_num=room_num, 
-        room_status_name=room_status_name, 
-        room_status_desc=room_status_desc
+        room_name=room_data.get('room_name'), 
+        room_type=room_data.get('room_type'),
+        room_description=room_data.get('room_description'),
+        room_img=room_data.get('room_img'),
+        room_status=room_data.get('room_status'),
+        checkout_time=room_data.get('checkout_time')
     )
 
     room.save()
@@ -37,16 +35,15 @@ def add_room(room_name, room_type, room_price, room_desc, room_img, room_num, ro
 
 # 修改房间
 @api
-def update_room(room_id, room_name, room_type, room_price, room_desc, room_img, room_num, room_status_name, room_status_desc):
-    room = Room.objects.get(room_id=room_id)
-    room.room_name = room_name
-    room.room_type = room_type
-    room.room_price = room_price
-    room.room_desc = room_desc
-    room.room_img = room_img
-    room.room_num = room_num
-    room.room_status_name = room_status_name
-    room.room_status_desc = room_status_desc
+def update_room(room_data):
+    room = Room.objects.get(room_id=room_data.get('room_id'))
+    room.room_number = room_data.get('room_number') or room.room_number
+    room.room_type = room_data.get('room_type') or room.room_type
+    room.room_description = room_data.get('room_description') or room.room_description
+    room.room_img = room_data.get('room_img') or room.room_img
+    room.room_status = room_data.get('room_status') or room.room_status
+    room.checkout_time = room_data.get('checkout_time') or room.checkout_time
+    room.updated_time = datetime.datetime.now()
     room.save()
     return room.json()
 
@@ -57,12 +54,14 @@ def delete_room(room_id):
     room.delete()
     return room.json()
 
+
 # 添加房间类型
 @api
 def add_room_type(room_type_name, room_type_desc):
     room_type = RoomType.objects.get_or_create(
         room_type_name=room_type_name, 
-        room_type_desc=room_type_desc)
+        room_type_desc=room_type_desc
+    )
     room_type.save()
     return room_type.json()
 
@@ -87,7 +86,6 @@ def update_room_type(room_type_id, room_type_name, room_price, room_type_desc):
     return room_type.json()
 
 
-
 @api
 def delete_room_type(room_type_id):
     """删除房间类型"""
@@ -101,7 +99,7 @@ def daily_report(request):
     today = datetime.datetime.now().date()
 
     # 查询今天的订单
-    orders = RoomOrder.objects.filter(checkin_date__lte=today, checkout_date__gte=today)
+    orders = Order.objects.filter(checkin_date__lte=today, checkout_date__gte=today)
 
     # 计算当日房费总收入和订单数
     total_income = orders.aggregate(Sum('income'))['income__sum']
@@ -116,18 +114,18 @@ def daily_report(request):
 
     for order in orders:
         # 计算当日房费
-        daily_rate = round(order.income / order.stay_days, 2)
+        daily_rate = round(order.income / order.days, 2)
 
         writer.writerow([
-            order.checkin_date,
+            order.check_in_date,
             order.room.room_number,
-            order.room.room_type.name,
-            order.platform,
+            order.room.room_type.type_name,
+            order.booking_platform,
             order.user.name,
             order.income,
-            order.stay_days,
+            order.days,
             daily_rate,
-            order.checkout_date
+            order.check_out_date
         ])
 
     # 添加当日房费总收入和订单数统计
@@ -144,7 +142,7 @@ def get_today_order_list(date):
     if not date:
         return {'error': 'date is required'}
     try:
-        check_in_date = datetime.strptime(date, '%Y-%m-%d')
+        check_in_date = datetime.datetime.strptime(date, '%Y-%m-%d')
     except ValueError:
         return {'error': 'invalid date format, should be YYYY-MM-DD'}
     
@@ -152,19 +150,17 @@ def get_today_order_list(date):
     result = []
     for order in orders:
         days = (order.check_out_date - order.check_in_date).days
-        income = order.total_price
+        income = order.income
         if days:
             income = income / days
         data = {
             'check_in_time': order.check_in_date.strftime('%Y-%m-%d %H:%M:%S'),
             'room_number': order.room.room_number,
-            'room_type': order.room.room_type.name,
+            'room_type': order.room.room_type.type_name,
             'booking_platform': order.booking_platform,
-            'status': order.status,
             'payment_platform': order.payment_platform,
-            'payment_time': order.payment_time.strftime('%Y-%m-%d %H:%M:%S') if order.payment_time else None,
-            'guest_name': order.guest_name,
-            'total_income': order.total_price,
+            'user_name': order.user.name,
+            'total_income': order.income,
             'days': days,
             'daily_price': income,
             'check_out_time': order.check_out_date.strftime('%Y-%m-%d %H:%M:%S')
@@ -182,16 +178,29 @@ def get_order_list():
         data = {
             'check_in_time': order.check_in_date.strftime('%Y-%m-%d %H:%M:%S'),
             'room_number': order.room.room_number,
-            'room_type': order.room.room_type.name,
+            'room_type': order.room.room_type.type_name,
             'booking_platform': order.booking_platform,
-            'status': order.status,
             'payment_platform': order.payment_platform,
-            'payment_time': order.payment_time.strftime('%Y-%m-%d %H:%M:%S') if order.payment_time else None,
-            'guest_name': order.guest_name,
-            'total_income': order.total_price,
+            'user_name': order.user.name,
+            'total_income': order.income,
             'days': (order.check_out_date - order.check_in_date).days,
-            'daily_price': order.total_price / (order.check_out_date - order.check_in_date).days,
+            'daily_price': order.income / (order.check_out_date - order.check_in_date).days,
             'check_out_time': order.check_out_date.strftime('%Y-%m-%d %H:%M:%S')
         }
         result.append(data)
     return result
+
+
+@api
+def create_user(name, mobile, email, id_card, gender, address):
+    """创建用户"""
+    user = User.objects.get_or_create(
+        name=name,
+        mobile=mobile,
+        id_card=id_card,
+        email=email,
+        gender=gender,
+        address=address
+    )
+    user.save()
+    return user.json()

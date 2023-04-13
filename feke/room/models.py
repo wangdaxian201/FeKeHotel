@@ -64,6 +64,8 @@ class Room(models.Model):
         ('maintenance', '维修中')
     )
     room_status = models.CharField(max_length=20, choices=status_choices, verbose_name='房间状态')
+    room_description = models.TextField(blank=True, null=True, verbose_name='房间描述')
+    room_img = models.ImageField(upload_to='room_img', blank=True, null=True, verbose_name='房间图片')
     checkout_time = models.DateTimeField(blank=True, null=True, verbose_name='退房时间')
     created_time = models.DateTimeField(auto_now_add=True)
     updated_time = models.DateTimeField(auto_now=True)
@@ -102,13 +104,13 @@ class Order(models.Model):
     days = models.IntegerField(verbose_name='入住天数', default=0)
     order_amount = models.DecimalField(max_digits=8, decimal_places=2)
     order_status = models.CharField(max_length=10, default='unpaid')
-    income = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='收入', default=0)
+    income = models.DecimalField(max_digits=8, decimal_places=2, default=0, verbose_name='收入')
     created_time = models.DateTimeField(auto_now_add=True)
     updated_time = models.DateTimeField(auto_now=True)
     is_canceled = models.BooleanField(default=False, verbose_name='是否取消')
 
     def __str__(self):
-        return f'{self.user.username}订单'
+        return f'{self.user.name}订单'
 
     class Meta:
         db_table = 'order'
