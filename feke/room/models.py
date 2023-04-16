@@ -134,6 +134,7 @@ class Room(models.Model):
 
     def json(self):
         return {
+            'room_id': self.id,
             'room_number': self.room_number,
             'room_type': self.room_type.json(),
             'room_status': self.room_status,
@@ -155,6 +156,7 @@ class RoomTypePrice(models.Model):
 
     def to_json(self):
         return {
+            "type_id": self.id,
             'room_type': self.room_type.to_json(),
             'start_date': self.start_date.isoformat(),
             'end_date': self.end_date.isoformat(),
@@ -177,15 +179,16 @@ class Order(models.Model):
     )
     order_status_choices = (
         ('unpaid', '未付款'),
-        ('paid', '已付款')
+        ('paid', '已付款'),
+        ('canceled', '已取消')
     )
     room_status_choices = (
         ('no_check_in', '未入住'),
         ('occupied', '已入住'),
-        ('checkout', '已退房')
+        ('maintenance', '维修中')
     )
     booking_platform = models.CharField(max_length=50, verbose_name='下单平台')
-    payment_platform = models.CharField(max_length=20, null=True, choices=payment_platform_choices, verbose_name='付款平台')
+    payment_platform = models.CharField(max_length=20, null=True, choices=payment_platform_choices, verbose_name='付款方式')
     days = models.IntegerField(verbose_name='入住天数', default=0)
     order_amount = models.DecimalField(max_digits=8, decimal_places=2, verbose_name='订单金额')
     order_status = models.CharField(max_length=20, choices=order_status_choices, default='unpaid', verbose_name='订单状态') # 已付款，未付款
@@ -225,7 +228,7 @@ class Order(models.Model):
             'days': self.days,
             'order_amount': str(self.order_amount),
             'order_status': self.order_status,
-            'room_status': self.room_status,
+            'room_status': self.room.room_status,
             'created_time': datetime_to_timestamp_in_milliseconds(self.created_time),
             'updated_time': datetime_to_timestamp_in_milliseconds(self.updated_time),
             'is_canceled': self.is_canceled

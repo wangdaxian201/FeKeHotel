@@ -11,12 +11,28 @@
     ```
     # 入住时间 
     # 房间号
-    # 房间类型
     # 下单平台
-    # 入住姓名
+    # 房客姓名
+    # 房客电话
     # 订单天数
     # 订单总价
     # 平均每天单价
+
+    {
+        "user_name": "xiaohei",
+        "user_mobile": "12345678910",
+        "room_number": "8300",
+        "start_date": "2023-05-17",
+        "end_date": "2023-06-14",
+        "order_status": "unpaid",
+        "room_status": "no_check_in",
+        "days": 5,
+        "check_in_date": "",
+        "check_out_date": "",
+        "booking_platform": "wechat"
+    }
+
+
     
     ```
     

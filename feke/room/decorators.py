@@ -1,11 +1,7 @@
-import os
 import json
 import time
-import base64
 import logging
-import traceback
 import functools
-from io import BytesIO
 
 from django.urls import path
 from django.conf import settings
@@ -13,7 +9,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from utils.error import APIError
-from urls import urlpatterns
+from room.urls import urlpatterns
 
 
 logger = logging.getLogger(__name__)
@@ -28,14 +24,17 @@ def api(func):
 
         try:
             params = json.loads(request.body.decode('utf-8'))
+            print('params: ', params)
         except Exception as e:
-            error_log(request.path, request.body, e)
+            print('error: ', e)
             return error(APIError(APIError.REQUEST_BODY_ERROR))
         try:
             result = func(**params)
         except APIError as e:
+            print('api error: ', e)
             return error(e)
         except TypeError as e:
+            print('type error: ', e.args)
             if 'required positional argument' in str(e):
                 return error(APIError(APIError.PARAM_MISSING, str(e).split(':')[1]))
             elif 'unexpected keyword' in str(e):
@@ -43,17 +42,11 @@ def api(func):
             else:
                 return error(APIError(APIError.SERVER_ERROR))
         except FileNotFoundError as e:
+            print('file not found: ', e)
             return error(APIError(APIError.FILE_MISSING, e.filename))
-        except APIError as e:
-                e = APIError(APIError.RESULTS_LENGTH_NOT_EQUAL)
-                return error(e)
-            e = APIError(APIError.SERVER_ERROR)
-            return error(e)
         except Exception as e:
-            error_log(request.path, params, e)
-            e = APIError((50001, f'{e}'))
-            # e = APIError(APIError.SERVER_ERROR)
-            return error(e)
+            print('server error: ', e)
+            return error(APIError(APIError.SERVER_ERROR))
 
         if settings.DEBUG:
             print('api use time: ', time.time() - start)
@@ -61,15 +54,15 @@ def api(func):
             return success(result)
         else:
             return result
-
-    urlpatterns.append(path('api/%s/' % view.__name__, view))
+    urlpatterns.append(path('%s/' % view.__name__, view))
 
     return view
+
 
 def error(error):
     return JsonResponse({'success': False, 'result':{'code': error.code, 'msg': error.msg}})
 
 
 def success(result):
-    result['code'] = 50000
+    result['code'] = 200
     return JsonResponse({'success': True, 'result': result if result else ''})

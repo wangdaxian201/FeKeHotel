@@ -16,8 +16,9 @@ class APIError(Exception):
     SPACE_NOT_ENOUGH = (50015, 'User Space Not Enough')
     SOLVER_JSON_KEY_NOTFOUND = (50017, "solver json not key %s")
     SOLVER_TRY_ERROR = (50018, "%s")
-    GDS_LOADING_ERROR = (50019, "Loading GDS file failed. File name: %s")
-    GDS_NO_CELL = (50020, "No cell in the GDS file. File name: %s")
+    room_not_found = (50019, "Room Not Found")
+    room_not_available = (50020, "Room Not available")
+    room_not_reserved = (50021, "Room Not reserved")
 
     # 59001 - 59999 用户级提示
     MODE_EXPANSION_SWEEP_PARAM_ERROR = (

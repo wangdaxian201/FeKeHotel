@@ -54,7 +54,7 @@ def get_all_room_types():
 def add_room(room_data):
     print(f'bbbbbbbb')
     try:
-        room_type = RoomType.objects.filter(type_name=room_data.get('room_type'))
+        room_type = RoomType.objects.filter(id=room_data.get('room_id'))
     except RoomType.DoesNotExist:
         print(f'room_type 不存在')
         room_type = RoomType.objects.create(
@@ -62,14 +62,14 @@ def add_room(room_data):
             price=100,
             description="默认房间"
         )
-    room_type_obj = RoomType.objects.get(type_name=room_data.get('room_type'))
+    room_type_obj = RoomType.objects.get(id=room_data.get('room_id'))
     print(f'{room_type=}')
     try:
         room = Room.objects.create(
             room_number=room_data.get('room_number'),
             room_type=room_type_obj,
-            room_description=room_data.get('room_description'),
-            room_img=room_data.get('room_img'),
+            room_description=room_data.get('remark'),
+            room_img=room_data.get('room_img', ''),
             room_status=room_data.get('room_status')
         )
         print(f'room: {room=}')
@@ -85,11 +85,9 @@ def update_room(room_data):
     defaults = {
         'room_name': room_data.get('room_name'),
         'room_type': room_data.get('room_type'),
-        'room_description': room_data.get('room_description'),
-        'room_img': room_data.get('room_img'),
+        'room_description': room_data.get('remark'),
+        'room_img': room_data.get('room_img', ''),
         'room_status': room_data.get('room_status'),
-        'checkout_time': room_data.get('checkout_time'),
-        'updated_time': datetime.datetime.now(),
     }
     room, created = Room.objects.update_or_create(
         room_id=room_data.get('room_id'),
@@ -100,8 +98,11 @@ def update_room(room_data):
 # 删除房间
 @api
 def delete_room(room_id):
-    room = Room.objects.get(room_id=room_id)
-    room.delete()
+    try:
+        room = Room.objects.get(id=room_id)
+        room.delete()
+    except Room.DoesNotExist:
+        raise APIError(APIError.room_not_found)
     return room.json()
 
 
@@ -270,13 +271,17 @@ def update_order(data):
     print(f'{datetime.datetime.now()} update_order')
     try:
         with transaction.atomic():
-            order = Order.objects.get(id=data['id'])
+            order = Order.objects.filter(id=data.get("order_id"), ).first()
             order.check_in_date = datetime.datetime.now()
-            order.order_status = data.get('order_status', '已入住')
+            order.order_status = data.get('order_status', "unpaid")
             order.save()
             room = order.room
-            room.room_status = '已入住'
-            room.save()
+            # 如果有人入住，且房间为未入住状态 房间状态改为已入住
+            if order.order_status == "no_check_in":
+                room.room_status = "check_in"
+                room.save()
+            else:
+                return {'message': 'order status is not no_check_in'}
             return order.json()
     except Exception as e:
         # 回滚
