@@ -61,6 +61,31 @@ def split_dates(start_date, end_date):
     return date_list.pop() if date_list  else []
 
 
+@check_none
+def get_date_list(start_date, end_date):
+    """获取日期列表"""
+    if start_date == end_date:
+        return [start_date]
+    
+    cur_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+    
+    date_list = []
+    while cur_date <= end_date:
+        date_list.append(cur_date.strftime('%Y-%m-%d'))
+        cur_date += timedelta(days=1)
+    return date_list
 
 
-print(split_dates('2023-05-02', '2023-05-02'))
+@check_none
+def compute_checkin_days(start_date, end_date):
+    """计算入住天数"""
+    # 检查字符串是否为日期格式
+    try:
+        datetime.datetime.strptime(start_date, '%Y-%m-%d')
+        datetime.datetime.strptime(end_date, '%Y-%m-%d')
+    except ValueError:
+        raise ValueError("Incorrect data format, should be YYYY-MM-DD")
+    if start_date == end_date:
+        return 1
+    return (datetime.datetime.strptime(end_date, '%Y-%m-%d') - datetime.datetime.strptime(start_date, '%Y-%m-%d')).days

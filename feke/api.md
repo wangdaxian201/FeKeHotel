@@ -31,8 +31,6 @@
         "check_out_date": "",
         "booking_platform": "wechat"
     }
-
-
     
     ```
     
