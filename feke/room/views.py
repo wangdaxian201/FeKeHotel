@@ -45,48 +45,50 @@ def get_all_rooms():
 # 添加房间
 @api
 def add_room(room_data):
-    print(f'bbbbbbbb')
+
     try:
-        room_type = RoomType.objects.filter(id=room_data.get('room_id'))
+        room_type = RoomType.objects.get(id=room_data.get('type_id'))
+        with transaction.atomic():
+            room, created = Room.objects.get_or_create(
+                room_number=room_data.get('room_number'),
+                defaults={
+                    'room_type': room_type,
+                    'room_description': room_data.get('remark'),
+                    'room_img': room_data.get('room_img', ''),
+                    'room_status': room_data.get('room_status')
+                }
+            )
     except RoomType.DoesNotExist:
-        print(f'room_type 不存在')
-        room_type = RoomType.objects.create(
-            type_name='单人间',
-            price=100,
-            description="默认房间"
-        )
-    room_type_obj = RoomType.objects.get(id=room_data.get('room_id'))
-    print(f'{room_type=}')
-    try:
-        room = Room.objects.create(
-            room_number=room_data.get('room_number'),
-            room_type=room_type_obj,
-            room_description=room_data.get('remark'),
-            room_img=room_data.get('room_img', ''),
-            room_status=room_data.get('room_status')
-        )
-        print(f'room: {room=}')
+        raise APIError(APIError.room_type_not_found)
     except Exception as e:
-        print(f'create room {e}')
+        print(f'{e=}')
+        raise APIError(APIError.room_add_failed)
     else:
-        print(f'room: {room.room_number=}')
         return room.json()
 
 # 修改房间
 @api
 def update_room(room_data):
-    defaults = {
-        'room_name': room_data.get('room_name'),
-        'room_type': room_data.get('room_type'),
-        'room_description': room_data.get('remark'),
-        'room_img': room_data.get('room_img', ''),
-        'room_status': room_data.get('room_status'),
-    }
-    room, created = Room.objects.update_or_create(
-        room_id=room_data.get('room_id'),
-        defaults=defaults,
-    )
-    return room.to_dict()
+
+    try:
+        room = Room.objects.get(id=int(room_data.get('room_id')), is_deleted=False)
+    except Room.DoesNotExist:
+        raise APIError(APIError.room_not_found)
+
+    try:
+        room_type = RoomType.objects.get(id=room_data.get('type_id'))
+    except RoomType.DoesNotExist:
+        raise APIError(APIError.room_type_not_found)
+
+    room.room_status = room_data.get('room_status')
+    room.room_description = room_data.get('remark')
+    room.room_type = room_type
+    try:
+        room.save()
+    except Exception as e:
+        raise APIError(APIError.room_update_failed)
+
+    return room.json()
 
 # 删除房间
 @api

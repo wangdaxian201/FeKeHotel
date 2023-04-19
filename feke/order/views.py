@@ -1,11 +1,11 @@
 import datetime
 
 from django.db import transaction
+from .decorators import api
 
-from feke.room.decorators import api
-from feke.room.models import Order, Room
-from feke.utils.error import APIError
-from feke.utils.tools import compute_checkin_days
+from room.models import Order, Room
+from utils.error import APIError
+from utils.tools import compute_checkin_days
 
 
 

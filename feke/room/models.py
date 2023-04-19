@@ -87,7 +87,6 @@ class Room(models.Model):
     room_status = models.CharField(max_length=20, choices=status_choices, verbose_name='房间状态')
     room_description = models.TextField(blank=True, null=True, default='', verbose_name='房间描述')
     room_img = models.ImageField(upload_to='room_img', blank=True, null=True, verbose_name='房间图片')
-    checkout_time = models.DateTimeField(blank=True, null=True, verbose_name='退房时间')
     created_time = models.DateTimeField(auto_now_add=True)
     updated_time = models.DateTimeField(auto_now=True)
     # 是否被删除
@@ -136,11 +135,10 @@ class Room(models.Model):
         return {
             'room_id': self.id,
             'room_number': self.room_number,
-            'room_type': self.room_type.json(),
+            'type_name': self.room_type.type_name,
+            'type_id': self.room_type.id,
             'room_status': self.room_status,
-            'checkout_time': datetime_to_timestamp_in_milliseconds(self.checkout_time),
-            'created_time': datetime_to_timestamp_in_milliseconds(self.created_time), # 转时间戳
-            'updated_time': datetime_to_timestamp_in_milliseconds(self.updated_time)
+            'remark': self.room_description,
         }
 
 

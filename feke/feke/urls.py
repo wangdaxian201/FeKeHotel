@@ -18,10 +18,12 @@ from django.urls import path, include
 
 from room import views as room_views
 
-import room
+import room, order
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('room.urls')),
+    path('api/room/', include('room.urls')),
+    path('api/order/', include('order.urls')),
     # path('api/get_all_rooms/', room_views.get_all_rooms),
     path('api/user/login/', room_views.login),
     path('api/user/info/', room_views.info),

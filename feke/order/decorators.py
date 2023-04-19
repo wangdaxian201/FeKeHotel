@@ -9,7 +9,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from utils.error import APIError
-from room.urls import urlpatterns
+# from order.urls import urlpatterns
 
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ def api(func):
             return success(result)
         else:
             return result
-    urlpatterns.append(path('roo/%s/' % view.__name__, view))
+    # urlpatterns.append(path('%s/' % view.__name__, view))
 
     return view
 
