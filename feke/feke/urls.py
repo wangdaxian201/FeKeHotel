@@ -17,14 +17,22 @@ from django.contrib import admin
 from django.urls import path, include
 
 from room import views as room_views
+from order import views as order_views
 
 import room, order
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/room/', include('room.urls')),
-    path('api/order/', include('order.urls')),
+    path('', include(room.urls)),
+    # path('', include('order.urls')),
     # path('api/get_all_rooms/', room_views.get_all_rooms),
+    path('api/get_order_list/', order_views.get_order_list),
+    # create_order
+    path('api/create_order/', order_views.create_order),
+    path('api/delete_order/', order_views.delete_order),
+    path('api/update_order/', order_views.update_order),
+    path('api/get_today_order_list/', order_views.get_today_order_list),
+    
     path('api/user/login/', room_views.login),
     path('api/user/info/', room_views.info),
 ]

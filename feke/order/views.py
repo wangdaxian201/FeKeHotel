@@ -1,12 +1,12 @@
 import datetime
 
 from django.db import transaction
-from .decorators import api
+
 
 from room.models import Order, Room
 from utils.error import APIError
 from utils.tools import compute_checkin_days
-
+from room.decorators import api
 
 
 @api
@@ -101,7 +101,6 @@ def create_order(data):
             booking_platform=data['booking_platform'],
             order_amount=order_amount,
             order_status=data['order_status'],
-            payment_platform=data['payment_platform'],
         )
         if not _:
             return {'message': 'order already exists'}
@@ -125,20 +124,22 @@ def update_order(data):
     print(f'{datetime.datetime.now()} update_order')
     try:
         with transaction.atomic():
-            order = Order.objects.filter(id=data.get("order_id"), ).first()
+            order = Order.objects.select_for_update().get(id=data.get("order_id"))
             order.check_in_date = datetime.datetime.now()
             order.order_status = data.get('order_status', "unpaid")
             order.save()
+            
             room = order.room
-            # 如果有人入住，且房间为未入住状态 房间状态改为已入住
-            if order.order_status == "no_check_in":
-                room.room_status = "check_in"
+            print(f'{order.order_status=}')
+            if room.room_status == "no_check_in":
+                print(f'{room.room_status=}')
+                room.room_status = "occupied"
                 room.save()
             else:
-                return {'message': 'order status is not no_check_in'}
+                raise APIError(APIError.room_not_reserved)
+            
             return order.json()
     except Exception as e:
-        # 回滚
-        transaction.set_rollback(True)
+        transaction.rollback()
         return {'update order error': str(e)}
 

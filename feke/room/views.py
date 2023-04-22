@@ -13,7 +13,7 @@ import csv
 from django.http import HttpResponse, JsonResponse
 from django.db.models import Sum
 
-from .decorators import api
+from room.decorators import api
 
 
 @csrf_exempt

@@ -115,9 +115,9 @@ class Room(models.Model):
         if str(start_date) == str(end_date):
             print('start_date == end_date')
             return False
-        reservations = Reservation.objects.filter(room=self)
+        reservations = Order.objects.filter(room=self)
         if not reservations:
-            return False
+            return True
         # 检查预订时间段是否与现有订单时间段有重叠
         for i in reservations:
             print(i.start_date, i.end_date)

@@ -54,7 +54,7 @@ def api(func):
             return success(result)
         else:
             return result
-    urlpatterns.append(path('roo/%s/' % view.__name__, view))
+    urlpatterns.append(path('api/%s/' % view.__name__, view))
 
     return view
 
